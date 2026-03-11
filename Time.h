@@ -2,28 +2,27 @@
 
 #include <iosfwd>
 
-namespace weather 
+namespace weather
 {
 
-class Time 
+class Time
 {
 public:
-    Time() noexcept = default;
+    Time() = default;
     Time(int hour, int minute);
 
-    int getHour() const;
-    int getMinute() const;
-    int getSecond() const;
+    int getHour()   const noexcept { return hour_; }
+    int getMinute() const noexcept { return minute_; }
+
     void setHour(int h);
     void setMinute(int m);
-    void setSecond(int s);
 
     bool operator==(const Time& other) const noexcept;
-    bool operator<(const Time& other) const noexcept;
-    bool operator>(const Time& other) const noexcept { return other < *this; }
+    bool operator!=(const Time& other) const noexcept { return !(*this == other); }
+    bool operator< (const Time& other) const noexcept;
 
 private:
-    int hour_ = 0;
+    int hour_   = 0;
     int minute_ = 0;
 };
 
