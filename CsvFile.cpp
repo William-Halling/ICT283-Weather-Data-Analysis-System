@@ -1,153 +1,100 @@
 #include "CsvFile.h"
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
 
-CsvFile::CsvFile() : m_Records(), m_ColumnMap({{"WAST", -1}, {"SR", -1}, {"S", -1}, {"T", -1}})
+namespace io {
+
+void CsvFile::loadAllInto(container::BinarySearchTree<weather::WeatherRecord>& tree)
 {
+    for (const auto& fname : sourceFiles_.getFiles())
+        parseFile(fname, tree);
 }
 
-
-CsvFile::CsvFile(const CsvFile& other) : m_Records(other.m_Records), m_ColumnMap(other.m_ColumnMap)
-{}
-
-
-CsvFile::~CsvFile(){}
-
-
-Vector<WeatherRecordsType> CsvFile::getRecords() const
+void CsvFile::parseFile(const std::string& filename, container::BinarySearchTree<weather::WeatherRecord>& tree)
 {
-    return m_Records;
-}
-
-
-void CsvFile::setRecords(Vector<WeatherRecordsType> tempRecords)
-{
-    m_Records = tempRecords;
-}
-
-
-int CsvFile::getColumnNumber(const std::string& columnName) const
-{
-    std::map<std::string, int>::const_iterator columnItr = m_ColumnMap.find(columnName);
-
-    if (columnItr != m_ColumnMap.end())
-    {
-        return columnItr->second;
-    }
-    return -1;
-}
-
-
-void CsvFile::findColumns(std::stringstream& idCodes, std::map<std::string, int>& columnMap)
-{
-    std::string columnID;
-    int columnCount = 0;
-
-    while(std::getline(idCodes, columnID, ','))
-    {
-        if(columnMap.find(columnID) != columnMap.end())
-        {
-            columnMap[columnID] = columnCount;
-        }
-
-        columnCount++;
-    }
-}
-
-void CsvFile::readFile(const std::string& fileName, Vector<WeatherRecordsType>& m_Records)
-{
-    std::ifstream infile(fileName);
-
-    if (!infile)
-    {
-        throw std::runtime_error("Error: could not find file " + fileName);
-
-        return;
-    }
+    std::ifstream file(filename);
+    
+    if (!file.is_open())
+        
+        throw std::runtime_error("Cannot open CSV: " + filename);
 
     std::string header;
-    std::getline(infile, header);
-    std::stringstream headerStream(header);
+    
+    if (!std::getline(file, header))
+        
+        return; // empty file
 
+    parseHeader(header);
 
-    findColumns(headerStream, m_ColumnMap);
-    std::string currentLine;
-
-    while (std::getline(infile, currentLine))
+    std::string line;
+    while (std::getline(file, line)) 
     {
-        processLine(currentLine, m_Records);
-    }
-    infile.close();
-
-
-    setRecords(m_Records);
-}
-
-
-void CsvFile::processLine(const std::string& thisRow, Vector<WeatherRecordsType>& weatherRecords)
-{
-    std::stringstream currentRow(thisRow);
-    WeatherRecordsType tempWeatherRecords;
-
-    std::string columnData;
-    int currentColumn = 0;
-
-    while (std::getline(currentRow, columnData, ','))
-    {
-        if (currentColumn == m_ColumnMap["WAST"])
-        {
-            processDateTime(columnData, tempWeatherRecords);
-        }
-        else if (currentColumn == m_ColumnMap["SR"])
-        {
-            processSolarRadiation(columnData, tempWeatherRecords);
-        }
-        else if (currentColumn == m_ColumnMap["T"])
-        {
-            processTemperature(columnData, tempWeatherRecords);
-        }
-        else if (currentColumn == m_ColumnMap["S"])
-        {
-            processSpeed(columnData, tempWeatherRecords);
-        }
-
-        currentColumn++;
-    }
-    weatherRecords.push_back(tempWeatherRecords);
-}
-
-
-void CsvFile::processDateTime(const std::string& dateTimeStr, WeatherRecordsType& weatherRecord)
-{
-    std::stringstream dateTimeStream(dateTimeStr);
-
-    dateTimeStream >> weatherRecord.m_Date >> weatherRecord.m_Time;
-}
-
-
-void CsvFile::processSolarRadiation(const std::string& solarStr, WeatherRecordsType& weatherRecord)
-{
-    float solarData = 0.0f;
-    std::stringstream solarRadiationSS(solarStr);
-
-    solarRadiationSS >> solarData;
-
-    if (solarData > 100)
-    {
-        weatherRecord.m_SolarR = solarData * (1.0 / 6.0) / 100.0;
+        if (line.empty()) 
+            
+            continue;
+        
+        weather::WeatherRecord rec;
+        parseRow(line, rec);
+        tree.insert(rec);
     }
 }
 
-
-void CsvFile::processTemperature(const std::string& tempStr, WeatherRecordsType& weatherRecord)
+void CsvFile::parseHeader(const std::string& header) 
 {
-    std::stringstream temperatureSS(tempStr);
-
-    temperatureSS >> weatherRecord.m_Temperature;
+    columnIndices_.clear();
+    std::stringstream ss(header);
+    std::string col;
+    int idx = 0;
+    while (std::getline(ss, col, ',')) 
+    {
+        columnIndices_[col] = idx++;
+    }
 }
 
-
-void CsvFile::processSpeed(const std::string& speedStr, WeatherRecordsType& weatherRecord)
+void CsvFile::parseRow(const std::string& row, weather::WeatherRecord& rec) const 
 {
-    std::stringstream speedSS(speedStr);
+    std::stringstream ss(row);
+    std::string field;
+    int idx = 0;
 
-    speedSS >> weatherRecord.m_Speed;
+    auto getIndex = [&](const std::string& name)
+    {
+        auto it = columnIndices_.find(name);
+        
+        return (it != columnIndices_.end()) ? it->second : -1;
+    };
+
+    int posWAST = getIndex("WAST");
+    int posSR   = getIndex("SR");
+    int posT    = getIndex("T");
+    int posS    = getIndex("S");
+
+    while (std::getline(ss, field, ',')) 
+    {
+        if (idx == posWAST) 
+        {
+            std::stringstream fs(field);
+            fs >> rec.date >> rec.time;
+        }
+            
+        else if (idx == posSR) 
+        {
+            float val;
+            std::stringstream(field) >> val;
+            rec.solarRadiation = val * (1.0f/6.0f) / 100.0f;
+        }
+            
+        else if (idx == posT) 
+        {
+            std::stringstream(field) >> rec.temperature;
+        }
+        else if (idx == posS)
+        {
+            std::stringstream(field) >> rec.windspeed;
+        }
+        ++idx;
+    }
 }
+
+} // namespace io
