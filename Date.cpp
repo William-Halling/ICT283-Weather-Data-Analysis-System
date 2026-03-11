@@ -1,38 +1,40 @@
 #include "Date.h"
 #include <sstream>
-#include <iomanip>
+#include <stdexcept>
 
-namespace weather {
+namespace weather 
+{
 
-Date::Date(int day, int month, int year) : day_(day), month_(month), year_(year) {
-    if (!isValid()) {
+Date::Date(int d, int m, int y) : day_(d), month_(m), year_(y) 
+{
+    if (!isValid())
+    {
         throw std::invalid_argument("Invalid date");
     }
 }
 
-
-void Date::setDay(int d) {
+void Date::setDay(int d) 
+{
     day_ = d;
- 
     if (!isValid())
     {
         throw std::invalid_argument("Invalid day");
     }
 }
 
-void Date::setMonth(int m) {
+void Date::setMonth(int m) 
+{
     month_ = m;
-    
-    if (!isValid()) 
+    if (!isValid())
     {
         throw std::invalid_argument("Invalid month");
     }
 }
 
-
-void Date::setYear(int y) {
+void Date::setYear(int y) 
+{
     year_ = y;
-    if (!isValid()) 
+    if (!isValid())
     {
         throw std::invalid_argument("Invalid year");
     }
@@ -46,18 +48,14 @@ bool Date::operator==(const Date& other) const noexcept
 bool Date::operator<(const Date& other) const noexcept 
 {
     if (year_ != other.year_)
-    {    
+    {
         return year_ < other.year_;
     }
-    
-    if (month_ != other.month_) 
-    {    
-        return month_ < other.month_;
+    if (month_ != other.month_) return month_ < other.month_;
+    {
+        return day_ < other.day_;
     }
-    
-    return day_ < other.day_;
 }
-
 
 bool Date::isValid() const noexcept 
 {
@@ -70,16 +68,15 @@ bool Date::isValid() const noexcept
     {    
         return false;
     }
-    
     if (day_ < 1) 
-    {    
+    {
         return false;
     }
     
-    static const int daysInMonth[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
-    int maxDays = daysInMonth[month_];
+    static const int days[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    int maxDays = days[month_];
     
-    if (month_ == 2 && isLeapYear(year_))
+    if (month_ == 2 && isLeapYear())
     {
         maxDays = 29;
     }
@@ -88,32 +85,33 @@ bool Date::isValid() const noexcept
 }
 
 
-bool Date::isLeapYear(int y) const noexcept 
+bool Date::isLeapYear() const noexcept 
 {
-    return (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0);
+    return (year_ % 4 == 0 && year_ % 100 != 0) || (year_ % 400 == 0);
 }
 
-std::istream& operator>>(std::istream& is, Date& date) {
+
+std::istream& operator>>(std::istream& is, Date& date) 
+{
     int d, m, y;
-    char sep1, sep2;
+    char c1, c2;
     
-    if (is >> d >> sep1 >> m >> sep2 >> y && sep1 == '/' && sep2 == '/') 
+    if (is >> d >> c1 >> m >> c2 >> y && c1 == '/' && c2 == '/')
     {
         date = Date(d, m, y);
-    } 
-    else 
+    }
+    else
     {
         is.setstate(std::ios::failbit);
     }
-    
     return is;
 }
 
+
 std::ostream& operator<<(std::ostream& os, const Date& date)
 {
-    os << std::setw(2) << std::setfill('0') << date.getDay() << '/'
-       << std::setw(2) << std::setfill('0') << date.getMonth() << '/'
-       << date.getYear();
+    os << date.getDay() << '/' << date.getMonth() << '/' << date.getYear();
+    
     return os;
 }
 
