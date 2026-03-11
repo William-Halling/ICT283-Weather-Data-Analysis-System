@@ -1,108 +1,51 @@
 #include "Time.h"
+#include <stdexcept>
 
-Time::Time() : m_Hour(0), m_Minute(0), m_Second(0) {}
+namespace weather {
 
-Time::Time(int hour, int minute, int second) : m_Hour(hour), m_Minute(minute), m_Second(second) {}
-
-Time::Time(const Time& otherTime) 
-    : m_Hour(otherTime.m_Hour), m_Minute(otherTime.m_Minute), m_Second(otherTime.m_Second) 
-{}
-
-
-Time::~Time() {}
-
-
-const Time& Time::operator=(const Time& otherTime)
-{
-    if (this != &otherTime)
-    {
-        m_Hour   = otherTime.m_Hour;
-        m_Minute = otherTime.m_Minute;
-        m_Second = otherTime.m_Second;
-    }
-    return *this;
+Time::Time(int h, int m) {
+    setHour(h);
+    setMinute(m);
 }
 
-
-bool Time::operator==(const Time& otherTime) const
-{
-    return (m_Hour == otherTime.m_Hour && m_Minute == otherTime.m_Minute && m_Second == otherTime.m_Second);
+void Time::setHour(int h) {
+    if (h < 0 || h > 23) throw std::invalid_argument("Invalid hour");
+    hour_ = h;
 }
 
-bool Time::operator!=(const Time& otherTime) const
+void Time::setMinute(int m) 
 {
-    return !(*this == otherTime);
+    if (m < 0 || m > 59) throw std::invalid_argument("Invalid minute");
+    minute_ = m;
 }
 
-int Time::getHour() const { return m_Hour; }
-int Time::getMinute() const { return m_Minute; }
-int Time::getSecond() const { return m_Second; }
-
-
-void Time::setHour(int hour)
+bool Time::operator==(const Time& other) const noexcept 
 {
-    if (validateHour(hour)) m_Hour = hour;
+    return hour_ == other.hour_ && minute_ == other.minute_;
 }
 
-
-void Time::setMinute(int minute)
+bool Time::operator<(const Time& other) const noexcept 
 {
-    if (validateMinute(minute)) 
-    {
-        m_Minute = minute;
-    }
+    if (hour_ != other.hour_) return hour_ < other.hour_;
+    return minute_ < other.minute_;
 }
 
-void Time::setSecond(int second)
+std::istream& operator>>(std::istream& is, Time& time) 
 {
-    if (validateSecond(second))
-    {
-        m_Second = second;
-    }
-}
-
-
-bool Time::validateHour(int hour) const
-{
-    return hour >= 0 && hour <= 23;
-}
-
-
-bool Time::validateMinute(int minute) const
-{
-    return minute >= 0 && minute <= 59;
-}
-
-
-bool Time::validateSecond(int second) const
-{
-    return second >= 0 && second <= 59;
-}
-
-
-std::istream& operator>>(std::istream& in, Time& t)
-{
-    int hour, minute, second;
-    char sep1, sep2;
+    int h, m;
+    char colon;
+    if (is >> h >> colon >> m && colon == ':')
+        time = Time(h, m);
+    else
+        is.setstate(std::ios::failbit);
     
-    in >> hour >> sep1 >> minute >> sep2 >> second;
-    
-    if (sep1 == ':' && sep2 == ':')
-    {
-        t.setHour(hour);
-        t.setMinute(minute);
-        t.setSecond(second);
-    }
-    
-    return in;
+    return is;
 }
 
-
-std::ostream& operator<<(std::ostream& out, const Time& t)
+std::ostream& operator<<(std::ostream& os, const Time& time) 
 {
-    out << (t.getHour() < 10 ? "0" : "") << t.getHour() << ":"
-        << (t.getMinute() < 10 ? "0" : "") << t.getMinute() << ":"
-        << (t.getSecond() < 10 ? "0" : "") << t.getSecond();
-    
-    return out;
+    os << time.getHour() << ':' << time.getMinute();
+    return os;
 }
+
+} // namespace weather
