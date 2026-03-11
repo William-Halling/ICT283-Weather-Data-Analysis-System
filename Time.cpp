@@ -1,24 +1,15 @@
 #include "Time.h"
 
-Time::Time() : m_Hour(0), m_Minute(0), m_Second(0)
+Time::Time() : m_Hour(0), m_Minute(0), m_Second(0) {}
+
+Time::Time(int hour, int minute, int second) : m_Hour(hour), m_Minute(minute), m_Second(second) {}
+
+Time::Time(const Time& otherTime) 
+    : m_Hour(otherTime.m_Hour), m_Minute(otherTime.m_Minute), m_Second(otherTime.m_Second) 
 {}
 
-Time::~Time()
-{
-    //dtor
-}
 
-
-Time::Time(int tempHour, int tempMinute, int tempSecond) : m_Hour(tempHour), m_Minute(tempMinute), m_Second(tempSecond)
-{
-
-}
-
-
-Time::Time(const Time& otherTime) : m_Hour(otherTime.m_Hour), m_Minute(otherTime.m_Minute), m_Second(otherTime.m_Second)
-{
-
-}
+Time::~Time() {}
 
 
 const Time& Time::operator=(const Time& otherTime)
@@ -29,92 +20,89 @@ const Time& Time::operator=(const Time& otherTime)
         m_Minute = otherTime.m_Minute;
         m_Second = otherTime.m_Second;
     }
-
     return *this;
 }
 
 
-bool Time::operator ==(const Time& otherTime) const
+bool Time::operator==(const Time& otherTime) const
 {
     return (m_Hour == otherTime.m_Hour && m_Minute == otherTime.m_Minute && m_Second == otherTime.m_Second);
 }
-
 
 bool Time::operator!=(const Time& otherTime) const
 {
     return !(*this == otherTime);
 }
 
-
-int Time::getHour()   const { return m_Hour;   }
+int Time::getHour() const { return m_Hour; }
 int Time::getMinute() const { return m_Minute; }
 int Time::getSecond() const { return m_Second; }
 
 
-void Time::setSecond(int newSecond)
+void Time::setHour(int hour)
 {
-    if(isValidTime(newSecond))
+    if (validateHour(hour)) m_Hour = hour;
+}
+
+
+void Time::setMinute(int minute)
+{
+    if (validateMinute(minute)) 
     {
-        m_Second = newSecond;
+        m_Minute = minute;
+    }
+}
+
+void Time::setSecond(int second)
+{
+    if (validateSecond(second))
+    {
+        m_Second = second;
     }
 }
 
 
-void Time::setMinute(int newMinute)
+bool Time::validateHour(int hour) const
 {
-    if (isValidTime(newMinute))
-    {
-        m_Minute = newMinute;
-    }
+    return hour >= 0 && hour <= 23;
 }
 
 
-void Time::setHour(int newHour)
+bool Time::validateMinute(int minute) const
 {
-    if(isValidHour(newHour))
-    {
-        m_Hour = newHour;
-    }
+    return minute >= 0 && minute <= 59;
 }
 
 
-bool Time::isValidTime(int newTime) const
+bool Time::validateSecond(int second) const
 {
-    return (newTime >= 0 && newTime <= 59);
+    return second >= 0 && second <= 59;
 }
 
 
-bool Time::isValidHour(int checkHour) const
-{
-    return (checkHour >= 0 && checkHour <= 23);
-}
-
-
-std::istream& operator>>(std::istream& inputs, Time& time)
+std::istream& operator>>(std::istream& in, Time& t)
 {
     int hour, minute, second;
-    char delimiter;
-
-    inputs >> hour;
-    time.setHour(hour);
-    inputs.ignore();
-
-    inputs >> minute;
-    time.setMinute(minute);
-
-
-    return inputs;
+    char sep1, sep2;
+    
+    in >> hour >> sep1 >> minute >> sep2 >> second;
+    
+    if (sep1 == ':' && sep2 == ':')
+    {
+        t.setHour(hour);
+        t.setMinute(minute);
+        t.setSecond(second);
+    }
+    
+    return in;
 }
 
 
-std::ostream & operator <<(std::ostream & outputs, const Time& time)
+std::ostream& operator<<(std::ostream& out, const Time& t)
 {
-    outputs << time.getHour() << ":";
-
-    if(time.getMinute() < 10)
-        outputs << "0";
-
-    outputs << time.getMinute();
-
-    return outputs;
+    out << (t.getHour() < 10 ? "0" : "") << t.getHour() << ":"
+        << (t.getMinute() < 10 ? "0" : "") << t.getMinute() << ":"
+        << (t.getSecond() < 10 ? "0" : "") << t.getSecond();
+    
+    return out;
 }
