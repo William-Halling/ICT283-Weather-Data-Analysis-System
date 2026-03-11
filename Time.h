@@ -1,63 +1,32 @@
-#ifndef TIME_H
-#define TIME_H
+#pragma once
 
-#include <iostream>
+#include <iosfwd>
 
-/**
- * @class Time
- * @brief This class is used to store and manipulate time information (hour, minute, second).
- *
- * @author William Halling
- * @version 0.3
- * @date April 2024
- */
-class Time
+namespace weather 
+{
+
+class Time 
 {
 public:
-    /// Default constructor: initializes time to 00:00:00
-    Time();
+    Time() noexcept = default;
+    Time(int hour, int minute);
 
-    /// Parameterized constructor
-    Time(int hour, int minute, int second);
-
-    /// Copy constructor
-    Time(const Time& otherTime);
-
-    /// Destructor
-    ~Time();
-
-    /// Assignment operator
-    const Time& operator=(const Time& otherTime);
-
-    /// Equality operator
-    bool operator==(const Time& otherTime) const;
-
-    /// Inequality operator
-    bool operator!=(const Time& otherTime) const;
-
-    /// Getters
     int getHour() const;
     int getMinute() const;
-    int getSecond() const;
 
-    /// Setters
-    void setHour(int hour);
-    void setMinute(int minute);
-    void setSecond(int second);
+    void setHour(int h);
+    void setMinute(int m);
 
-    /// Validation functions
-    bool validateHour(int hour) const;
-    bool validateMinute(int minute) const;
-    bool validateSecond(int second) const;
+    bool operator==(const Time& other) const noexcept;
+    bool operator<(const Time& other) const noexcept;
+    bool operator>(const Time& other) const noexcept { return other < *this; }
 
 private:
-    int m_Hour;   /// Hour of the day (0-23)
-    int m_Minute; /// Minute of the hour (0-59)
-    int m_Second; /// Second of the minute (0-59)
+    int hour_ = 0;
+    int minute_ = 0;
 };
 
-// Stream operators
-std::istream& operator>>(std::istream& in, Time& t);
-std::ostream& operator<<(std::ostream& out, const Time& t);
+std::istream& operator>>(std::istream& is, Time& time);
+std::ostream& operator<<(std::ostream& os, const Time& time);
 
-#endif // TIME_H
+} // namespace weather
