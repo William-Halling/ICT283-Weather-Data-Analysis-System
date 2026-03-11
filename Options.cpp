@@ -1,218 +1,214 @@
-#include "Options.h"
+#include "ui/Options.h"
+#include "weather/Date.h"
+#include "weather/WeatherType.h"
+#include "../containers/Vector.h"
+#include "../weather/Statistics.h"
 
-Options::Options(){}
+#include <iostream>
+#include <limits>
+#include <string>
 
-
-Options::~Options(){}
-
-
-Options::Options(const Statistics& statistics) : m_Stats(statistics)
-{}
-
-
-void Options::displayNoData(const std::string& monthName, int year)
+namespace weather
 {
-    std::cout << monthName << " " << year << " " << " No Data " << std::endl;
+
+/**
+ * @brief Displays the main menu options
+ */
+void Options::displayMenu() const 
+{
+    std::cout << "\n=== Weather Data Analysis Menu ===\n";
+    std::cout << "1. Average windspeed and sample standard deviation for a specific month and year\n";
+    std::cout << "2. Average ambient air temperature and sample std dev for each month of a specified year\n";
+    std::cout << "3. Total solar radiation (kWh/m²) for each month of a specified year\n";
+    std::cout << "5. Quit program\n";
+    std::cout << "Enter choice: ";
 }
 
-
-void Options::displayWindspeedData(const Vector<WeatherRecordsType>& recordedData, int month, int year)
+/**
+ * @brief Gets and validates the user's menu choice
+ * @return Valid MenuOption enum value
+ */
+MenuOption Options::getUserChoice() const 
 {
-    int weatherType = 1;
-    std::string monthName = DateUtility::getEnteredMonthName(month);
-
-    Vector<float> filteredData = m_Stats.filterRecords(recordedData, month, year, weatherType);
-
-    float average = 0.0f;
-    float stdDev  = 0.0f;
-
-
-    if(filteredData.size() > 0)
+    int input = 0;
+    while (true) 
     {
-        average = m_Stats.calculateAverage(filteredData);
-        stdDev  = m_Stats.calculateStdDev(filteredData, average);
-        average *= 3.6;
+        std::cin >> input;
 
-        average = m_Stats.roundStats(average);
-        stdDev  = m_Stats.roundStats(stdDev);
-
-        std::cout << monthName << "  " << year    << ": "   << std::endl;
-        std::cout << "Average Speed: " << average << "km/h" << std::endl;
-        std::cout << "Sample stdev:  " << stdDev  << std::endl;
-    }
-    else
-    {
-        displayNoData(monthName, year);
-    }
-}
-
-
-
-void Options::displayTemperatureData(const Vector<WeatherRecordsType>& recordedData, const int year)
-{
-    int weatherType = 2;
-
-    std::cout << year << std::endl;
-
-    float average = 0.0f;
-    float stdDev  = 0.0f;
-
-    for(int month = 1; month <= 12; ++month)
-    {
-        std::string monthName = DateUtility::getEnteredMonthName(month);
-
-        Vector<float> filteredData = m_Stats.filterRecords(recordedData, month, year, weatherType);
-
-        if(filteredData.size() > 0)
+        if (std::cin.fail()) 
         {
-            average = m_Stats.calculateAverage(filteredData);
-            stdDev  = m_Stats.calculateStdDev(filteredData, average);
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid input. Please enter a number: ";
+            
+            continue;
+        }
+        
 
-            std::cout << "\n" << monthName << ":" << "average: " << m_Stats.roundStats(average) << " degrees C, stdev: " << m_Stats.roundStats(stdDev) << std::endl;
-        }
-        else
+        if (input == 1 || input == 2 || input == 3 || input == 5) 
         {
-            std::cout << "\n" << monthName << ": No Data" << std::endl;
+            return static_cast<MenuOption>(input);
         }
+
+        std::cout << "Invalid choice. Please select 1, 2, 3, or 5: ";
     }
 }
 
 
-
-//Prompt the user for the month as a numeric value. So, for January, user will enter 1.
-//So, if the user enters 1 at the Option 3 prompt,
-//The output will be as shown below: Sample Pearson Correlation Coefficient for January//
-//S_T: n.nn
-//S_R: n.nn
-//T_R: n.nn
-
-//where
-
-//n.nn is the actual calculated value for each sPCC.
-
-    ///Note that for this Option 3, the selected month applies to all years that have been loaded. So multiple years’ data for the user specified mont
-
-
-
-/****
-void Options::displaySPCC(const Vector<WeatherRecordsType>& recordedData, const int month)
+/**
+ * @brief Prompts for and validates a month (1–12)
+ * @return Valid month (1–12)
+ */
+int Options::getValidMonth() const 
 {
-    std::string monthName = DateUtility::getEnteredMonthName(month);
-    std::cout << "Sample Pearson Correlation Coefficient for : " << monthName << " : " std::endl;
-
-    try
+    int month = 0;
+    while (true) 
     {
-        Vector<float> filteredSpeed          = m_Stats.filterRecords(recordedData, month, 1);
-        Vector<float> filteredTemperature    = m_Stats.filterRecords(recordedData, month, 2);
-        Vector<float> filteredSolarRadiation = m_Stats.filterRecords(recordedData, month, 3);
+        std::cout << "Enter month (1–12): ";
+        std::cin >> month;
 
-
-        float sPCC_S_T = m_Stats.sPCC(filteredSpeed, filteredTemperature);
-        float sPCC_S_R = m_Stats.sPCC(filteredSpeed, filteredSolarRadiation);
-        float sPCC_T_R = m_Stats.sPCC(filteredTemperature, filteredSolarRadiation);
-
-
-        std::cout << "S_T: " << sPCC_S_T << std::endl;
-        std::cout << "S_R: " << sPCC_S_T << std::endl;
-        std::cout << "T_R: " << sPCC_S_T << std::endl;
-    }
-    catch(const std::invalid_argument& error)
-    {
-        std::cerr << "Error calculating SPCC " << error.what() << std::endl;
+        if (std::cin.fail() || month < 1 || month > 12)
+        {
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid month. Please enter a number between 1 and 12: ";
+            continue;
+        }
+        return month;
     }
 }
-**/
 
 
-
-
-void Options::displaySolarRadiationData(const Vector<WeatherRecordsType>& recordedData, const int year)
+/**
+ * @brief Prompts for and validates a year (positive integer)
+ * @return Valid year
+ */
+int Options::getValidYear() const 
 {
-    int weatherType = 3;
-    std::cout << year << std::endl;
-
-    for(int month = 1; month <= 12; ++month)
+    int year = 0;
+    while (true) 
     {
-        Vector<float> filteredData = m_Stats.filterRecords(recordedData, month, year, weatherType);
+        std::cout << "Enter year: ";
+        std::cin >> year;
 
-        float totalSolar = m_Stats.calculateTotal(filteredData);
-
-        std::cout << DateUtility::getEnteredMonthName(month) << ": ";
-
-        if(filteredData.size() > 0)
+        if (std::cin.fail() || year < 0) 
         {
-            std::cout << "\n" << m_Stats.roundStats(totalSolar) << " kWh/m^2" << std::endl;
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid year. Please enter a positive number: ";
+            continue;
         }
-        else if(totalSolar == 0)
-        {
-            std::cout << "\n" << "No Data" << std::endl;
-        }
+        
+        return year;
     }
 }
 
 
 
-/***
-void Options::displaySolarRadiationData(const Vector<WeatherRecordsType>& recordedData, const int year)
+/**
+ * @brief Displays windspeed statistics for a given month/year
+ */
+void Options::showWindspeedStats(int month, int year, const Statistics& stats) const
 {
-    int weatherType = 3;
-    std::cout << year << std::endl;
+    std::string name = monthName(month);
+    auto windspeeds = stats.windspeeds();
 
-    for(int month = 1; month <= 12; ++month)
+    if (windspeeds.size() == 0)
     {
-        Vector<float> filteredData = m_Stats.filterRecords(recordedData, month, year, weatherType);
-
-        float totalSolar = m_Stats.calculateTotal(filteredData);
-
-        std::cout << DateUtility::getEnteredMonthName(month) << ": ";
-
-        if(filteredData.size() > 0)
-        {
-            std::cout << "\n" << m_Stats.roundStats(totalSolar) << " kWh/m^2" << std::endl;
-        }
-        else if(totalSolar == 0)
-        {
-            std::cout << "\n" << "No Data" << std::endl;
-        }
+        showNoData(month, year);
+        
+        return;
     }
-}***/
+
+    float avg = stats.average(windspeeds) * 3.6f;  // m/s → km/h
+    float stdev = stats.stdDev(windspeeds, avg / 3.6f);  // back to m/s for std dev
+
+    avg = stats.roundToOneDecimal(avg);
+    stdev = stats.roundToOneDecimal(stdev);
+
+    std::cout << name << " " << year << ":\n";
+    std::cout << "  Average Speed: " << avg << " km/h\n";
+    std::cout << "  Sample stdev:  " << stdev << "\n";
+}
 
 
-std::string DateUtility::convertName(int enteredMonth)
+/**
+ * @brief Displays temperature statistics for a single month of a year
+ */
+void Options::showTemperatureStats(int month, int year, const Statistics& stats) const
 {
-    std::map<int, std::string> monthNames =
+    std::string name = monthName(month);
+    auto temps = stats.temperatures();
+
+    if (temps.size() == 0)
     {
-        {1, "January"},
-        {2, "February"},
-        {3, "March"},
-        {4, "April"},
-        {5, "May"},
-        {6, "June"},
-        {7, "July"},
-        {8, "August"},
-        {9, "September"},
-        {10, "October"},
-        {11, "November"},
-        {12, "December"}
+        std::cout << name << ": No Data\n";
+        return;
+    }
+    
+
+    float avg = stats.average(temps);
+    float stdev = stats.stdDev(temps, avg);
+
+    avg = stats.roundToOneDecimal(avg);
+    stdev = stats.roundToOneDecimal(stdev);
+
+    std::cout << name << ":\n";
+    std::cout << "  Average: " << avg << " °C, stdev: " << stdev << "\n";
+}
+
+/**
+ * @brief Displays total solar radiation for a single month of a year
+ * (Placeholder — implement when ready)
+ */
+void Options::showSolarRadiationStats(int month, int year, const Statistics& stats) const
+{
+    std::string name = monthName(month);
+    auto solar = stats.solarRadiation();
+
+    if (solar.size() == 0) 
+    {
+        std::cout << name << ": No Data\n";
+        
+        return;
+    }
+
+    float total = stats.total(solar);
+    total = stats.roundToOneDecimal(total);
+
+    std::cout << name << ": " << total << " kWh/m²\n";
+}
+
+
+/**
+ * @brief Displays "No Data" message for a month/year
+ */
+void Options::showNoData(int month, int year) const
+{
+    std::string name = monthName(month);
+    
+    std::cout << name << " " << year << ": No Data\n";
+}
+
+
+/**
+ * @brief Converts numeric month to full name
+ * @param month 1–12
+ * @return Month name or "Invalid Month"
+ */
+std::string Options::monthName(int month) const 
+{
+    static const std::string names[13] = {
+        "", "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
     };
 
-    std::map<int, std::string>::iterator monthItr = monthNames.find(enteredMonth);
-
-    if(monthItr != monthNames.end())
+    if (month >= 1 && month <= 12)
     {
-        return monthItr->second;
+        return names[month];
     }
-    else
-    {
-        return "Invalid";
-    }
+    
+    return "Invalid Month";
 }
 
-
-std::string DateUtility::getEnteredMonthName(int enteredMonth)
-{
-    if(enteredMonth >= 1 && enteredMonth <= MAX_MONTHS)
-    {
-        return convertName(enteredMonth);
-    }
-}
+} // namespace weather
