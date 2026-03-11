@@ -1,168 +1,120 @@
 #include "Date.h"
+#include <sstream>
+#include <iomanip>
 
-Date::Date() : m_Day(-1), m_Month(-1), m_Year(0)
-{}
+namespace weather {
 
-
-Date::Date(int newDay, int newMonth, int newYear) : m_Day(newDay), m_Month(newMonth), m_Year(newYear)
-{}
-
-
-Date::Date(const Date& otherDate) : m_Day(otherDate.m_Day), m_Month(otherDate.m_Month), m_Year(otherDate.m_Year)
-{}
-
-
-Date::~Date()
-{}
-
-
-Date& Date::operator=(const Date& otherDate)
-{
-    if (this != &otherDate)
-    {
-        m_Day   = otherDate.m_Day;
-        m_Month = otherDate.m_Month;
-        m_Year  = otherDate.m_Year;
-    }
-
-    return *this;
-}
-
-
-bool Date::operator==(const Date& otherDate) const
-{
-    return (m_Year == otherDate.m_Year && m_Month == otherDate.m_Month && m_Day == otherDate.m_Day);
-}
-
-
-bool Date::operator!=(const Date& otherDate) const
-{
-    return !(*this == otherDate);
-}
-
-
-bool Date::operator<(const Date& otherDate) const
-{
-    if(m_Year < otherDate.m_Year)
-    {
-        return true;
-    }
-
-
-    else if(m_Year == otherDate.m_Year && m_Month < otherDate.m_Month)
-    {
-        return true;
-    }
-
-
-    return false;
-}
-
-
-int Date::getDay() const
-{
-    return m_Day;
-}
-
-
-int Date::getMonth() const
-{
-    return m_Month;
-}
-
-
-int Date::getYear() const
-{
-    return m_Year;
-}
-
-
-void Date::setDay(int newDay)
-{
-    if (validateDay(newDay))
-    {
-        m_Day = newDay;
+Date::Date(int day, int month, int year) : day_(day), month_(month), year_(year) {
+    if (!isValid()) {
+        throw std::invalid_argument("Invalid date");
     }
 }
 
 
-void Date::setMonth(int newMonth)
-{
-    if(validateMonth(newMonth))
+void Date::setDay(int d) {
+    day_ = d;
+ 
+    if (!isValid())
     {
-        m_Month = newMonth;
+        throw std::invalid_argument("Invalid day");
+    }
+}
+
+void Date::setMonth(int m) {
+    month_ = m;
+    
+    if (!isValid()) 
+    {
+        throw std::invalid_argument("Invalid month");
     }
 }
 
 
-void Date::setYear(int tempYear)
-{
-    if(validateYear(tempYear))
+void Date::setYear(int y) {
+    year_ = y;
+    if (!isValid()) 
     {
-        m_Year = tempYear;
+        throw std::invalid_argument("Invalid year");
     }
 }
 
-
-bool Date::validateDay(int checkDay) const
+bool Date::operator==(const Date& other) const noexcept
 {
-    static const int daysInMonth[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    return day_ == other.day_ && month_ == other.month_ && year_ == other.year_;
+}
 
-
-    int maximumDays = daysInMonth[m_Month];
-
-
-    if(m_Month == 2 && calculateLeapYear(m_Year))
-    {
-        maximumDays++;
+bool Date::operator<(const Date& other) const noexcept 
+{
+    if (year_ != other.year_)
+    {    
+        return year_ < other.year_;
     }
-
-    return (checkDay >= 1 && checkDay <= maximumDays);
+    
+    if (month_ != other.month_) 
+    {    
+        return month_ < other.month_;
+    }
+    
+    return day_ < other.day_;
 }
 
 
-bool Date::validateMonth(int checkMonth) const
+bool Date::isValid() const noexcept 
 {
-    return (checkMonth >= 1 && checkMonth <= 12);
+    if (year_ < 1900 || year_ > 2100) 
+    {
+        return false;
+    }
+    
+    if (month_ < 1 || month_ > 12) 
+    {    
+        return false;
+    }
+    
+    if (day_ < 1) 
+    {    
+        return false;
+    }
+    
+    static const int daysInMonth[] = {0,31,28,31,30,31,30,31,31,30,31,30,31};
+    int maxDays = daysInMonth[month_];
+    
+    if (month_ == 2 && isLeapYear(year_))
+    {
+        maxDays = 29;
+    }
+    
+    return day_ <= maxDays;
 }
 
 
-bool Date::validateYear(int checkYear) const
+bool Date::isLeapYear(int y) const noexcept 
 {
-    return (checkYear >= 0);
+    return (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0);
 }
 
+std::istream& operator>>(std::istream& is, Date& date) {
+    int d, m, y;
+    char sep1, sep2;
+    
+    if (is >> d >> sep1 >> m >> sep2 >> y && sep1 == '/' && sep2 == '/') 
+    {
+        date = Date(d, m, y);
+    } 
+    else 
+    {
+        is.setstate(std::ios::failbit);
+    }
+    
+    return is;
+}
 
-bool Date::calculateLeapYear(int newYear) const
+std::ostream& operator<<(std::ostream& os, const Date& date)
 {
-    return (newYear % 400 == 0 || (newYear % 4 == 0 && newYear %100 != 0));
+    os << std::setw(2) << std::setfill('0') << date.getDay() << '/'
+       << std::setw(2) << std::setfill('0') << date.getMonth() << '/'
+       << date.getYear();
+    return os;
 }
 
-
-std::istream& operator>>(std::istream& inputs, Date& D)
-{
-    int day, month, year;
-
-    inputs >> day;
-    D.setDay(day);
-    inputs.ignore(1, '/');
-
-
-    inputs  >> month;
-    D.setMonth(month);
-    inputs.ignore(1, '/');
-
-    inputs >> year;
-    D.setYear(year);
-
-
-    return inputs;
-}
-
-
-std::ostream& operator <<(std::ostream& outputs, const Date & D)
-{
-    outputs << D.getDay() << "/" << D.getMonth() << "/" << D.getYear();
-
-    return outputs;
-}
+} // namespace weather
