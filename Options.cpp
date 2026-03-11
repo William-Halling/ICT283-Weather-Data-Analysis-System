@@ -1,214 +1,149 @@
-#include "ui/Options.h"
-#include "weather/Date.h"
-#include "weather/WeatherType.h"
-#include "../containers/Vector.h"
+#include "Options.h"
 #include "../weather/Statistics.h"
-
 #include <iostream>
 #include <limits>
-#include <string>
 
-namespace weather
-{
+namespace ui {
 
-/**
- * @brief Displays the main menu options
- */
-void Options::displayMenu() const 
-{
-    std::cout << "\n=== Weather Data Analysis Menu ===\n";
-    std::cout << "1. Average windspeed and sample standard deviation for a specific month and year\n";
-    std::cout << "2. Average ambient air temperature and sample std dev for each month of a specified year\n";
-    std::cout << "3. Total solar radiation (kWh/m²) for each month of a specified year\n";
-    std::cout << "5. Quit program\n";
-    std::cout << "Enter choice: ";
-}
-
-/**
- * @brief Gets and validates the user's menu choice
- * @return Valid MenuOption enum value
- */
-MenuOption Options::getUserChoice() const 
-{
-    int input = 0;
-    while (true) 
+    void Options::displayMenu() const
     {
-        std::cin >> input;
+        std::cout << "\n--- Weather Statistics Menu ---\n"
+                  << "1. Average wind speed and std dev for a given month/year\n"
+                  << "2. Average temperature and std dev for each month of a year\n"
+                  << "3. Pearson correlation (wind‑temp, wind‑solar, temp‑solar) for a month\n"
+                  << "5. Quit\n";
+    }
 
-        if (std::cin.fail()) 
+
+    MenuOption Options::getUserChoice() const     
+    {
+        int choice;
+        while (true) 
         {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid input. Please enter a number: ";
+            std::cout << "Enter option: ";
+           
+            if (std::cin >> choice && choice >= 1 && choice <= 5 && choice != 4) 
+            {
+                return static_cast<MenuOption>(choice);
+            }
             
-            continue;
-        }
-        
-
-        if (input == 1 || input == 2 || input == 3 || input == 5) 
-        {
-            return static_cast<MenuOption>(input);
-        }
-
-        std::cout << "Invalid choice. Please select 1, 2, 3, or 5: ";
-    }
-}
-
-
-/**
- * @brief Prompts for and validates a month (1–12)
- * @return Valid month (1–12)
- */
-int Options::getValidMonth() const 
-{
-    int month = 0;
-    while (true) 
-    {
-        std::cout << "Enter month (1–12): ";
-        std::cin >> month;
-
-        if (std::cin.fail() || month < 1 || month > 12)
-        {
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid month. Please enter a number between 1 and 12: ";
-            continue;
+            std::cout << "Invalid choice. Please enter 1,2,3 or 5.\n";
         }
-        return month;
     }
-}
-
-
-/**
- * @brief Prompts for and validates a year (positive integer)
- * @return Valid year
- */
-int Options::getValidYear() const 
-{
-    int year = 0;
-    while (true) 
+    
+    int Options::getValidMonth() const 
     {
-        std::cout << "Enter year: ";
-        std::cin >> year;
-
-        if (std::cin.fail() || year < 0) 
+        int month;
+        while (true) 
         {
+            std::cout << "Enter month (1‑12): ";
+           
+            if (std::cin >> month && month >= 1 && month <= 12)
+                
+                return month;
+            
             std::cin.clear();
             std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-            std::cout << "Invalid year. Please enter a positive number: ";
-            continue;
+            std::cout << "Invalid month.\n";
+        }
+    }
+    
+    int Options::getValidYear() const 
+    {
+        int year;
+        while (true) 
+        {
+            std::cout << "Enter year (e.g., 2023): ";
+            
+            if (std::cin >> year && year >= 0)
+                
+                return year;
+            
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            std::cout << "Invalid year.\n";
+        }
+    }
+    
+    void Options::showWindspeedStats(int month, int year, const std::vector<float>& windspeeds) const 
+    {
+        std::string mname = monthName(month);
+        
+        if (windspeeds.empty())
+        {
+            showNoData(month, year);
+            
+            return;
         }
         
-        return year;
+        float avg = weather::average(windspeeds) * 3.6f;       // m/s → km/h
+        float sd  = weather::stdDev(windspeeds, avg / 3.6f);
+        std::cout << mname << " " << year << ":\n"
+                  << "  Average wind speed: " << weather::roundToOneDecimal(avg) << " km/h\n"
+                  << "  Sample std dev:     " << weather::roundToOneDecimal(sd)  << " km/h\n";
     }
-}
 
 
-
-/**
- * @brief Displays windspeed statistics for a given month/year
- */
-void Options::showWindspeedStats(int month, int year, const Statistics& stats) const
-{
-    std::string name = monthName(month);
-    auto windspeeds = stats.windspeeds();
-
-    if (windspeeds.size() == 0)
+    void Options::showTemperatureStats(int month, int year, const std::vector<float>& temperatures) const
     {
-        showNoData(month, year);
+        std::string mname = monthName(month);
         
-        return;
-    }
-
-    float avg = stats.average(windspeeds) * 3.6f;  // m/s → km/h
-    float stdev = stats.stdDev(windspeeds, avg / 3.6f);  // back to m/s for std dev
-
-    avg = stats.roundToOneDecimal(avg);
-    stdev = stats.roundToOneDecimal(stdev);
-
-    std::cout << name << " " << year << ":\n";
-    std::cout << "  Average Speed: " << avg << " km/h\n";
-    std::cout << "  Sample stdev:  " << stdev << "\n";
-}
-
-
-/**
- * @brief Displays temperature statistics for a single month of a year
- */
-void Options::showTemperatureStats(int month, int year, const Statistics& stats) const
-{
-    std::string name = monthName(month);
-    auto temps = stats.temperatures();
-
-    if (temps.size() == 0)
-    {
-        std::cout << name << ": No Data\n";
-        return;
-    }
-    
-
-    float avg = stats.average(temps);
-    float stdev = stats.stdDev(temps, avg);
-
-    avg = stats.roundToOneDecimal(avg);
-    stdev = stats.roundToOneDecimal(stdev);
-
-    std::cout << name << ":\n";
-    std::cout << "  Average: " << avg << " °C, stdev: " << stdev << "\n";
-}
-
-/**
- * @brief Displays total solar radiation for a single month of a year
- * (Placeholder — implement when ready)
- */
-void Options::showSolarRadiationStats(int month, int year, const Statistics& stats) const
-{
-    std::string name = monthName(month);
-    auto solar = stats.solarRadiation();
-
-    if (solar.size() == 0) 
-    {
-        std::cout << name << ": No Data\n";
+        if (temperatures.empty()) 
+        {
+            showNoData(month, year);
+          
+            return;
+        }
         
-        return;
+        float avg = weather::average(temperatures);
+        float sd  = weather::stdDev(temperatures, avg);
+        std::cout << mname << ": "
+                  << "avg " << weather::roundToOneDecimal(avg) << "°C, "
+                  << "stdev " << weather::roundToOneDecimal(sd) << "°C\n";
     }
-
-    float total = stats.total(solar);
-    total = stats.roundToOneDecimal(total);
-
-    std::cout << name << ": " << total << " kWh/m²\n";
-}
-
-
-/**
- * @brief Displays "No Data" message for a month/year
- */
-void Options::showNoData(int month, int year) const
-{
-    std::string name = monthName(month);
     
-    std::cout << name << " " << year << ": No Data\n";
-}
-
-
-/**
- * @brief Converts numeric month to full name
- * @param month 1–12
- * @return Month name or "Invalid Month"
- */
-std::string Options::monthName(int month) const 
-{
-    static const std::string names[13] = {
-        "", "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-    };
-
-    if (month >= 1 && month <= 12)
+    void Options::showSolarCorrelation(int month, const std::vector<float>& windspeeds, const std::vector<float>& temperatures, const std::vector<float>& solar) const
     {
-        return names[month];
+        std::string mname = monthName(month);
+        
+        if (windspeeds.empty() || temperatures.empty() || solar.empty()) 
+        {
+            std::cout << mname << ": insufficient data for correlation.\n";
+            
+            return;
+        }
+        
+        float r_st = weather::pearsonCorrelation(windspeeds, temperatures);
+        float r_sr = weather::pearsonCorrelation(windspeeds, solar);
+    
+        
+        float r_tr = weather::pearsonCorrelation(temperatures, solar);
+        std::cout << "Pearson correlations for " << mname << ":\n"
+                  << "  Wind‑Temp : " << weather::roundToOneDecimal(r_st) << "\n"
+                  << "  Wind‑Solar: " << weather::roundToOneDecimal(r_sr) << "\n"
+                  << "  Temp‑Solar: " << weather::roundToOneDecimal(r_tr) << "\n";
     }
     
-    return "Invalid Month";
-}
+    void Options::showNoData(int month, int year) const 
+    {
+        std::cout << monthName(month) << " " << year << ": No Data\n";
+    }
+    
+    
+    std::string Options::monthName(int month) const 
+    {
+        static const char* names[] = {
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        };
+        
+        if (month >= 1 && month <= 12) 
+            
+            return names[month-1];
+        
+        return "Invalid";
+    }
 
-} // namespace weather
+} // namespace ui
