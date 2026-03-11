@@ -13,9 +13,10 @@ public:
 
     int getHour() const;
     int getMinute() const;
-
+    int getSecond() const;
     void setHour(int h);
     void setMinute(int m);
+    void setSecond(int s);
 
     bool operator==(const Time& other) const noexcept;
     bool operator<(const Time& other) const noexcept;
