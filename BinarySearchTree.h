@@ -1,93 +1,40 @@
-﻿#ifndef BST_H
-#define BST_H
-
+#pragma once
 #include "Node.h"
+#include <functional>
 
 template<typename T>
-class BinarySearchTree
-{
+class BinarySearchTree {
 private:
+    std::unique_ptr<Node<T>> root;
 
-    Node<T>* root;
-
-    void insert(Node<T>*& node, const T& value)
-    {
-        if (!node)
-        {
-            node = new Node<T>(value);
-
+    void insert(std::unique_ptr<Node<T>>& node, const T& value) {
+        if (!node) {
+            node = std::make_unique<Node<T>>(value);
             return;
         }
-
-        if (value < node->data)
+        if (value < node->data) {
             insert(node->left, value);
-        else
+        } else {
             insert(node->right, value);
+        }
     }
 
-
-    void inOrder(Node<T>* node, void (*func)(T&, void*), void* context)
-    {
-        if (!node) 
-            
-            return;
-
-        inOrder(node->left, func, context);
-        func(node->data, context);
-        inOrder(node->right, func, context);
+    // Modernized traversal using std::function. Const correctness applied.
+    void inOrder(const std::unique_ptr<Node<T>>& node, const std::function<void(const T&)>& func) const {
+        if (!node) return;
+        inOrder(node->left, func);
+        func(node->data);
+        inOrder(node->right, func);
     }
-
-
-    void preOrder(Node<T>* node, void (*func)(T&, void*), void* context)
-    {
-        if (!node)
-            
-            return;
-
-        func(node->data, context);
-        preOrder(node->left, func, context);
-        preOrder(node->right, func, context);
-    }
-
-
-    void postOrder(Node<T>* node, void (*func)(T&, void*), void* context)
-    {
-        if (!node) 
-            
-            return;
-
-        postOrder(node->left, func, context);
-        postOrder(node->right, func, context);
-        func(node->data, context);
-    }
-
 
 public:
+    BinarySearchTree() = default;
 
-    BinarySearchTree() : root(nullptr) {}
-
-    void insert(const T& value)
-    {
+    void insert(const T& value) {
         insert(root, value);
     }
 
-
-    void traverseInOrder(void (*func)(T&, void*), void* context)
-    {
-        inOrder(root, func, context);
-    }
-
-
-    void traversePreOrder(void (*func)(T&, void*), void* context)
-    {
-        preOrder(root, func, context);
-    }
-
-
-    void traversePostOrder(void (*func)(T&, void*), void* context)
-    {
-        postOrder(root, func, context);
+    void traverseInOrder(const std::function<void(const T&)>& func) const {
+        inOrder(root, func);
     }
 };
-
-#endif
