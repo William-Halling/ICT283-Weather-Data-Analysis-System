@@ -5,11 +5,10 @@
 #include "ui/Options.h"
 #include "collectors.h"
 #include <iostream>
+#include <vector>
 
-int main() 
-{
-    try
-    {
+int main() {
+    try {
         io::TextFile fileList;
         fileList.loadFrom("data/data_source.txt");
 
@@ -19,19 +18,24 @@ int main()
 
         ui::Options ui;
 
-        while (true) 
-        {
+        // Permanent allocation block reuse outside context looping to secure cache alignment
+        std::vector<float> windspeeds;
+        std::vector<float> temperatures;
+        std::vector<float> solar;
+
+        while (true) {
             ui.displayMenu();
             auto choice = ui.getUserChoice();
 
-            if (choice == ui::MenuOption::Quit) 
-            {
-                std::cout << "Exiting.\n";
+            if (choice == ui::MenuOption::Quit) {
+                std::cout << "System shutting down safely.\n";
                 break;
             }
 
             int month = 0, year = 0;
-            std::vector<float> windspeeds, temperatures, solar;
+            windspeeds.clear();
+            temperatures.clear();
+            solar.clear();
 
             switch (choice) {
                 case ui::MenuOption::WindStats:
@@ -57,15 +61,16 @@ int main()
                     break;
 
                 default:
-                    // should not happen
                     break;
             }
         }
     }
     catch (const std::exception& e) 
     {
-        std::cerr << "Error: " << e.what() << '\n';
+        std::cerr << "Fatal Exec Failure Routine Caught: " << e.what() << '\n';
+       
         return 1;
     }
+    
     return 0;
 }
