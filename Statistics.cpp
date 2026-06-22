@@ -5,7 +5,7 @@
 
 namespace weather {
 
-float Statistics::average(const std::vector<float>& data) noexcept 
+float average(const std::vector<float>& data) noexcept 
 {
     if (data.empty()) 
     {   
@@ -17,7 +17,7 @@ float Statistics::average(const std::vector<float>& data) noexcept
 }
 
 
-float Statistics::stdDev(const std::vector<float>& data, float mean) noexcept 
+float stdDev(const std::vector<float>& data, float mean) noexcept 
 {
     if (data.size() < 2) 
     {    
@@ -34,7 +34,7 @@ float Statistics::stdDev(const std::vector<float>& data, float mean) noexcept
 }
 
 
-float Statistics::pearsonCorrelation(const std::vector<float>& x, const std::vector<float>& y)
+float pearsonCorrelation(const std::vector<float>& x, const std::vector<float>& y)
 {
     if (x.size() != y.size() || x.empty()) 
     {
@@ -59,7 +59,7 @@ float Statistics::pearsonCorrelation(const std::vector<float>& x, const std::vec
     return (denominator == 0.0f) ? 0.0f : (num / denominator);
 }
 
-float Statistics::roundToOneDecimal(float value) noexcept 
+float roundToOneDecimal(float value) noexcept 
 {
     return std::round(value * 10.0f) / 10.0f;
 }
