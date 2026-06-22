@@ -1,57 +1,106 @@
-#ifndef BST_H
-#define BST_H
+#ifndef BINARYSEARCHTREE_H
+#define BINARYSEARCHTREE_H
 
 #include "Node.h"
 #include <functional>
+#include <utility>
 
-template<typename T>
-class BinarySearchTree {
-private:
-    std::unique_ptr<Node<T>> root;
+namespace container {
 
-
-    // Recursive helper for insertion
-    void insert(std::unique_ptr<Node<T>>& node, const T& value) {
-        if (!node) {
-            node = std::make_unique<Node<T>>(value);
-            return;
-        }
-        if (value < node->data) {
-            insert(node->left, value);
-        } else {
-            insert(node->right, value);
-        }
-    }
-
-
-    // In-order traversal using modern std::function
-    void inOrder(const std::unique_ptr<Node<T>>& node, const std::function<void(const T&)>& func) const {
-        if (!node) return;
-        inOrder(node->left, func);
-        func(node->data);
-        inOrder(node->right, func);
-    }
-
-
+template <typename T>
+class BinarySearchTree 
+{
 public:
-    BinarySearchTree() : root(nullptr) {}
+    BinarySearchTree() noexcept : root_(nullptr) {}
+    ~BinarySearchTree() = default;
 
-    // Disable copying to prevent tree duplication; enforce moving if needed
+    // Disable copying to maintain strict unique ownership rules
     BinarySearchTree(const BinarySearchTree&) = delete;
     BinarySearchTree& operator=(const BinarySearchTree&) = delete;
 
+    BinarySearchTree(BinarySearchTree&& other) noexcept : root_(std::move(other.root_)) {}
+    BinarySearchTree& operator=(BinarySearchTree&& other) noexcept 
+    {
+        if (this != &other) 
+        {
+            root_ = std::move(other.root_);
+        }
+        return *this;
+    }
 
-    void insert(const T& value) {
-        insert(root, value);
+    void insert(const T& value) 
+    {
+        insertNode(root_, value);
+    }
+
+    void insert(T&& value)
+    {
+        insertNode(root_, std::move(value));
+    }
+
+    template <typename F, typename... Args>
+    void inOrderTraverse(F&& func, Args&&... args) const 
+    {
+        inOrder(root_.get(), std::forward<F>(func), std::forward<Args>(args)...);
+    }
+
+private:
+    void insertNode(std::unique_ptr<Node<T>>& node, const T& value) 
+    {
+        if (!node) 
+        {
+            node = std::make_unique<Node<T>>(value);
+            
+            return;
+        }
+        
+        if (value < node->data) 
+        {
+            insertNode(node->left, value);
+        } 
+            
+        else 
+        {
+            insertNode(node->right, value);
+        }
+    }
+
+    void insertNode(std::unique_ptr<Node<T>>& node, T&& value) 
+{
+        if (!node) 
+        {
+            node = std::make_unique<Node<T>>(std::move(value));
+            
+            return;
+        }
+        
+        if (value < node->data)
+        {
+            insertNode(node->left, std::move(value));
+        } 
+        else 
+        {
+            insertNode(node->right, std::move(value));
+        }
     }
 
 
-    void traverseInOrder(const std::function<void(const T&)>& func) const {
-        inOrder(root, func);
+    template <typename F, typename... Args>
+    void inOrder(Node<T>* node, F&& func, Args&&... args) const 
+    {    
+        if (!node)
+        {    
+            return;
+        }
+        
+        inOrder(node->left.get(), std::forward<F>(func), std::forward<Args>(args)...);
+        func(node->data, std::forward<Args>(args)...);
+        inOrder(node->right.get(), std::forward<F>(func), std::forward<Args>(args)...);
     }
 
-
-    bool isEmpty() const noexcept { return root == nullptr; }
+    std::unique_ptr<Node<T>> root_;
 };
 
-#endif
+} // namespace container
+
+#endif // BINARYSEARCHTREE_H
