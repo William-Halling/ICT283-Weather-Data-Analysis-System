@@ -4,7 +4,6 @@
 #include "../weather/WeatherRecord.h"
 #include "../container/BinarySearchTree.h"
 #include <string>
-#include <string_view>
 #include <map>
 
 namespace io {
@@ -18,11 +17,10 @@ public:
 private:
     void parseFile(const std::string& filename, container::BinarySearchTree<weather::WeatherRecord>& tree);
     void parseHeader(std::string_view header);
-    // Passing by reference for efficiency
     void parseRow(std::string_view row, weather::WeatherRecord& rec) const;
 
     std::map<std::string, int> columnIndices_;
     TextFile sourceFiles_;
 };
 
-} // namespace io
+}
