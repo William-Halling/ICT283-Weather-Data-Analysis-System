@@ -1,173 +1,65 @@
 #include "Statistics.h"
+#include <numeric>
+#include <cmath>
+#include <stdexcept>
 
+namespace weather {
 
-
-
-Statistics::Statistics() : m_Total(0.0f), m_Average(0.0f), m_StdDev(0.0f){}
-
-
-Statistics::~Statistics(){}
-
-
-float Statistics::getTotal() const            { return m_Total;     }
-void Statistics::setTotal(float newTotal)     { m_Total = newTotal; }
-
-float Statistics::getAverage() const          { return m_Average;       }
-void Statistics::setAverage(float newAverage) { m_Average = newAverage; }
-
-float Statistics::getStandardDev() const      { return m_StdDev;      }
-void Statistics::setStdDev(float newStdDev)   { m_StdDev = newStdDev; }
-
-
-float Statistics::roundStats(float value) const
+float Statistics::average(const std::vector<float>& data) noexcept
 {
-    return roundf(value * 10.0f) / 10.0f;
+    if (data.empty()) return 0.0f;
+    const float sum = std::accumulate(data.begin(), data.end(), 0.0f);
+    return sum / static_cast<float>(data.size());
+}
+
+float Statistics::stdDev(const std::vector<float>& data, float mean) noexcept
+{
+    if (data.size() < 2) return 0.0f;
+    
+    float varianceSum = 0.0f;
+    
+    for (const float val : data) 
+    {
+        const float diff = val - mean;
+        varianceSum += diff * diff;
+    }
+    
+    return std::sqrt(varianceSum / static_cast<float>(data.size() - 1));
 }
 
 
-bool Statistics::divideByZero(int numItems) const
+float Statistics::pearsonCorrelation(const std::vector<float>& x, const std::vector<float>& y)
 {
-    if(numItems == 0)
+    if (x.size() != y.size() || x.empty())
     {
-        throw std::invalid_argument("Error: Unable to divide by 0");
-
-        return true;
+        throw std::invalid_argument("Vector data alignment mismatch for statistical analysis.");
     }
 
-    return false;
+    const float avgX = average(x);
+    const float avgY = average(y);
+
+    float num = 0.0f;
+    float denX = 0.0f;
+    float denY = 0.0f;
+
+    const size_t dataSize = x.size();
+    for (size_t i = 0; i < dataSize; ++i)
+    {
+        const float diffX = x[i] - avgX;
+        const float diffY = y[i] - avgY;
+        
+        num += diffX * diffY;
+        denX += diffX * diffX;
+        denY += diffY * diffY;
+    }
+
+    const float denominator = std::sqrt(denX * denY);
+    
+    return (denominator == 0.0f) ? 0.0f : (num / denominator);
 }
 
 
-float Statistics::calculateTotal(const Vector<float>& recordedData) const
+float Statistics::roundToOneDecimal(float value) noexcept
 {
-    float total = 0.0f;
-
-    for(int i = 0; i < recordedData.size(); ++i)
-    {
-        total += recordedData[i];
-    }
-
-    return total;
-}
-
-
-float Statistics::calculateAverage(const Vector<float>& recordedData) const
-{
-    if(recordedData.size() == 0)
-    {
-        throw std::invalid_argument("Error: Unable to calculate the Average as no data was provided: ");
-    }
-
-    float total = calculateTotal(recordedData);
-
-    if(divideByZero(recordedData.size()))
-    {
-        throw std::invalid_argument("Error: Unable to calculate the Average as no data was provided: ");
-    }
-
-
-    return total / recordedData.size();
-}
-
-
-float Statistics::calculateStdDev(const Vector<float>& recordedData, float average) const
-{
-    if(recordedData.size() < 2)
-    {
-        std::cout << "Error: Standard Deviation cannot be calculated with fewer than 2 items"<< std::endl;
-    }
-
-    float sqrdRangeDif = 0.0f;
-
-    for(int i = 0; i < recordedData.size(); ++i)
-    {
-         float variation = recordedData[i] - average;
-
-         sqrdRangeDif   += variation * variation ;
-    }
-
-    float range = sqrdRangeDif / (recordedData.size() - 1);
-
-
-    return sqrt(range);
-}
-
-
-float Statistics::sPCC(const Vector<float>& vectorX, const Vector<float>&  vectorY) const
-{
-    if(vectorX.size() != vectorY.size() || vectorX.size() == 0)
-    {
-        throw std::invalid_argument("Vectors x and y must be of the same size");
-    }
-
-
-    double mean_X = calculateAverage(vectorX);
-    double mean_Y = calculateAverage(vectorY);
-
-
-    double numerator = 0.0;
-    double totalSquaredDiffX = 0.0;
-    double totalSquaredDiffY = 0.0;
-
-
-    for(int i = 0; i < vectorX.size(); ++i)
-    {
-        float difference_X = vectorX[i] - mean_X;
-        float difference_Y = vectorY[i] - mean_Y;
-
-        numerator         += difference_X * difference_Y;
-        totalSquaredDiffX += difference_X * difference_X;
-        totalSquaredDiffY += difference_Y * difference_Y;
-    }
-
-
-    float denominator = sqrt(totalSquaredDiffX * totalSquaredDiffY);
-
-    if(denominator == 0)
-    {
-        throw std::invalid_argument("Error: Denominator is 0 unable to calculate PCC");
-    }
-
-    return numerator / denominator;
-}
-
-
-
-
-
-Vector<float> Statistics::filterRecords(const Vector<WeatherRecordsType>& recordedWeatherData, int enteredMonth, int enteredYear, int weatherType)
-{
-    Vector<float> filteredWeatherData;
-
-    for(int i = 0; i < recordedWeatherData.size(); ++i)
-    {
-        if(enteredMonth == recordedWeatherData[i].m_Date.getMonth() && enteredYear == recordedWeatherData[i].m_Date.getYear())
-        {
-            switch(weatherType)
-            {
-                case 1:
-                    filteredWeatherData.push_back(recordedWeatherData[i].m_Speed);
-                break;
-
-
-                case 2:
-                    filteredWeatherData.push_back(recordedWeatherData[i].m_Temperature);
-                break;
-
-
-                case 3:
-                    filteredWeatherData.push_back(recordedWeatherData[i].m_SolarR);
-                break;
-
-
-
-                default:
-                    std::cerr << "Invalid weather type!" << std::endl;
-            }
-        }
-    }
-    //std::cout << "Testing if we have actually added new Vector Data : " << std::endl;
-    //std::cout << "Statistics::dateFilterRecords  ---> Filtered Records Size:  " << filteredWeatherData.getLength() << std::endl;
-
-    return filteredWeatherData;
+    return std::round(value * 10.0f) / 10.0f;
 }
