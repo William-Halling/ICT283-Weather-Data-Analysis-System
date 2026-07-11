@@ -2,11 +2,10 @@
 #define BINARYSEARCHTREE_H
 
 #include "Node.h"
-#include <functional>
 #include <utility>
 
-namespace container {
-
+namespace container 
+{
 template <typename T>
 class BinarySearchTree 
 {
@@ -18,7 +17,8 @@ public:
     BinarySearchTree(const BinarySearchTree&) = delete;
     BinarySearchTree& operator=(const BinarySearchTree&) = delete;
 
-    BinarySearchTree(BinarySearchTree&& other) noexcept : root_(std::move(other.root_)) {}
+    BinarySearchTree(BinarySearchTree&& other) noexcept 
+        : root_(std::move(other.root_)) {}
 
     BinarySearchTree& operator=(BinarySearchTree&& other) noexcept 
     {
@@ -29,12 +29,10 @@ public:
         return *this;
     }
 
-
     void insert(const T& value) 
     {
         insertNode(root_, value);
     }
-
 
     void insert(T&& value)
     {
