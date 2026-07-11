@@ -5,7 +5,6 @@
 
 namespace weather
 {
-
   struct WeatherRecord 
   {
       Date   date;
@@ -17,5 +16,4 @@ namespace weather
       bool operator<(const WeatherRecord& other) const noexcept;
       bool operator==(const WeatherRecord& other) const noexcept;
   };
-
-} // namespace weather
+}
