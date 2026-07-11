@@ -2,7 +2,6 @@
 #define NODE_H
 
 #include <memory>
-#include <utility>
 
 template<typename T>
 struct Node 
@@ -11,8 +10,8 @@ struct Node
     std::unique_ptr<Node<T>> left;
     std::unique_ptr<Node<T>> right;
 
-    explicit Node(T value) 
-        : data(std::move(value)), left(nullptr), right(nullptr) {}
+    explicit Node(const T& value) : data(value) {}
+    explicit Node(T&& value) : data(std::move(value)) {}
         
     ~Node() = default;
 };
